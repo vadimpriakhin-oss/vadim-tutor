@@ -1,4 +1,5 @@
-{
+ai-tutor/
+  {
   "name": "AI Tutor",
   "short_name": "AITutor",
   "start_url": ".",
@@ -13,26 +14,18 @@
     }
   ]
 }
-self.addEventListener("install", () => {
-  console.log("SW installed");
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    (async () => {
+      console.log("SW installed");
+    })()
+  );
 });
-{
-  weakCategories: {
-    grammar: 5,
-    vocabulary: 2,
-    writing: 8
-  },
+import { studentModel } from "../model/studentModel";
 
-  mistakePatterns: [
-    "tense errors",
-    "article mistakes"
-  ],
+export function updateModel(category, isCorrect, userAnswer, correctAnswer) {
+  if (!studentModel.mistakes) studentModel.mistakes = [];
 
-  difficultyLevel: 1,
-
-  streak: 3
-}
-function updateModel(category, isCorrect, userAnswer, correctAnswer) {
   if (!isCorrect) {
     studentModel.weakCategories[category] =
       (studentModel.weakCategories[category] || 0) + 1;
@@ -42,37 +35,60 @@ function updateModel(category, isCorrect, userAnswer, correctAnswer) {
       userAnswer,
       correctAnswer
     });
+
+    studentModel.streak = 0;
   } else {
     studentModel.streak++;
   }
 
-  // 📈 адаптация сложности
   const totalMistakes = Object.values(studentModel.weakCategories)
     .reduce((a, b) => a + b, 0);
 
   studentModel.level = Math.max(1, Math.floor(totalMistakes / 5) + 1);
 }
-const prompt = `
+import { studentModel } from "../model/studentModel";
+
+export function buildPrompt() {
+  return `
 You are a personal AI tutor.
 
 Student profile:
 Level: ${studentModel.level}
-Weak areas: ${JSON.stringify(studentModel.weakCategories)}
-Recent mistakes: ${JSON.stringify(studentModel.mistakes.slice(-5))}
+Weak areas: ${Object.entries(studentModel.weakCategories)
+    .map(([k, v]) => `${k}:${v}`)
+    .join(", ")}
+
+Recent mistakes:
+${JSON.stringify(studentModel.mistakes.slice(-5))}
 
 Task:
 1. Evaluate answer
 2. Explain mistake simply
 3. Give correction
-4. IMPORTANT: Generate next exercise that focuses on student's weak areas
+4. Generate next exercise based on weak areas
 
 Return JSON:
 {
   "correct": true/false,
   "feedback": "...",
   "explanation": "...",
-  "nextTask": "new sentence exercise"
+  "nextTask": "..."
 }
 `;
-className="w-full max-w-sm mx-auto p-3 sm:p-6"
-className="active:scale-95 transition touch-manipulation"
+}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Tutor</title>
+
+    <link rel="manifest" href="/public/manifest.json" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script type="module" src="/src/App.jsx"></script>
+  </body>
+</html>
