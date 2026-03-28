@@ -1,6 +1,76 @@
-git init
-git add .
-git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/USERNAME/ai-tutor.git
-git push -u origin main
+{
+  "name": "AI Tutor",
+  "short_name": "AITutor",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
+self.addEventListener("install", () => {
+  console.log("SW installed");
+});
+{
+  weakCategories: {
+    grammar: 5,
+    vocabulary: 2,
+    writing: 8
+  },
+
+  mistakePatterns: [
+    "tense errors",
+    "article mistakes"
+  ],
+
+  difficultyLevel: 1,
+
+  streak: 3
+}
+function updateModel(category, isCorrect, userAnswer, correctAnswer) {
+  if (!isCorrect) {
+    studentModel.weakCategories[category] =
+      (studentModel.weakCategories[category] || 0) + 1;
+
+    studentModel.mistakes.push({
+      category,
+      userAnswer,
+      correctAnswer
+    });
+  } else {
+    studentModel.streak++;
+  }
+
+  // 📈 адаптация сложности
+  const totalMistakes = Object.values(studentModel.weakCategories)
+    .reduce((a, b) => a + b, 0);
+
+  studentModel.level = Math.max(1, Math.floor(totalMistakes / 5) + 1);
+}
+const prompt = `
+You are a personal AI tutor.
+
+Student profile:
+Level: ${studentModel.level}
+Weak areas: ${JSON.stringify(studentModel.weakCategories)}
+Recent mistakes: ${JSON.stringify(studentModel.mistakes.slice(-5))}
+
+Task:
+1. Evaluate answer
+2. Explain mistake simply
+3. Give correction
+4. IMPORTANT: Generate next exercise that focuses on student's weak areas
+
+Return JSON:
+{
+  "correct": true/false,
+  "feedback": "...",
+  "explanation": "...",
+  "nextTask": "new sentence exercise"
+}
+`;
