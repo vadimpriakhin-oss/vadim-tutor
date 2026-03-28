@@ -74,3 +74,5 @@ Return JSON:
   "nextTask": "new sentence exercise"
 }
 `;
+className="w-full max-w-sm mx-auto p-3 sm:p-6"
+className="active:scale-95 transition touch-manipulation"
